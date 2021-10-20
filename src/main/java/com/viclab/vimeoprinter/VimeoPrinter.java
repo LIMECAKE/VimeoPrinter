@@ -14,14 +14,11 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class VimeoPrinter {
-	
+
 	List<VimeoModel> vimeoList = new ArrayList<VimeoModel>();
 	boolean testMode = false;
 
@@ -73,14 +70,14 @@ public class VimeoPrinter {
 
 	}
 
-	private void onVimeoVideoFinished() {
+	private void onVimeoVideoFinished(int page) {
 		if (vimeoList == null) {
 			System.out.println("완료 : 비메오 영상이 없습니다");
 			return;
 		}
-		System.out.println("파일을 출력중입니다");
+		//System.out.println("파일을 출력중입니다");
 		try {
-			File file = new File("./output.txt");
+			File file = new File(String.format(Locale.getDefault(), "./output%03d.txt", page / 10));
 			if (file.exists()) {
 				file.delete();
 			}
@@ -93,13 +90,15 @@ public class VimeoPrinter {
 			//	System.out.println(vimeoModel.embCode);
 				writer.write(vimeoModel.embCode + "|" + vimeoModel.name + "|" + vimeoModel.date + "|" + vimeoModel.complete + "|" + vimeoModel.playable + "|" + vimeoModel.duration + "\n");
 			}
+			vimeoList.clear();
 			writer.close();
 		} catch (Exception e) {
 			System.out.println("오류가 발생했습니다\n" + e.getMessage());
 			e.printStackTrace();
 			return;
 		}
-		System.out.println("완료되었습니다");
+		//System.out.println("완료되었습니다");
+		System.out.println(String.format(Locale.getDefault(), "./output%03d.txt", page / 10));
 	}
 
 	private void getVimeoVideoList(int page, String authToken) {
@@ -168,12 +167,14 @@ public class VimeoPrinter {
 							VimeoModel vimeoModel = new VimeoModel(embCode, nameString, dateString, downloadUrl, thumbnail, playable, completed, duration);
 							vimeoList.add(vimeoModel);
 						}
+						if (page % 10 == 0) onVimeoVideoFinished(page);
 						if (page >= lastPage) {
-							onVimeoVideoFinished();
+							if (page % 10 != 0) onVimeoVideoFinished(page + 10);
+							//onVimeoVideoFinished(page);
 							return;
 						}
 						if (testMode && page >= 5) {
-							onVimeoVideoFinished();
+							onVimeoVideoFinished(page);
 							return;
 						}
 						getVimeoVideoList(page + 1, authToken);
